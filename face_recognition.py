@@ -1,17 +1,15 @@
 import cv2
+import time
 import numpy as np
 import sqlite3
 from deepface import DeepFace
 import json
 from sklearn.metrics.pairwise import cosine_similarity
+from deepface.commons import functions
 
-# カメラの初期化
 cap = cv2.VideoCapture(0)
 
-# カスケード分類器の初期化
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-# データベースの初期化
+# Initialize the database
 conn = sqlite3.connect('faces.db')
 cursor = conn.cursor()
 cursor.execute('''
@@ -23,24 +21,24 @@ CREATE TABLE IF NOT EXISTS faces (
 ''')
 conn.commit()
 
-# 変数の初期化
+# Initializing variables
 face_detected = False
 face_included_frames = 0
 frame_threshold = 10
 customer_name = ""
 frame_count = 0
-recognition_interval = 5  # 5フレームごとに顔認識を行う
+recognition_interval = 5
+target_size = (224, 224)
 
-# 5回連続で同一人物として判定するための変数
+
+# Variable for determining the same person 5 times in a row
 last_recognized_name = ""
 continuous_recognition_count = 0
 recognition_threshold = 5
-
-
-# 名前が表示されるフレーム数を設定
-display_name_duration = 50  # 例: 50フレーム
-display_name_counter = 0
-display_name = ""
+current_display_name= ""
+freeze_start_time = None
+freeze_duration = 5
+freezed_frame = None
 
 while True:
     ret, frame = cap.read()
@@ -49,13 +47,17 @@ while True:
 
     frame_count += 1
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    face_objs = DeepFace.extract_faces(img_path=frame, target_size=target_size, enforce_detection=False)
+    faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs]
+
+    if freeze_start_time and time.time() - freeze_start_time > freeze_duration:
+        freeze_start_time = None
+        last_recognized_name = ""
 
     for (x, y, w, h) in faces:
         face = frame[y:y+h, x:x+w]
 
-        if frame_count % recognition_interval == 0:
+        if frame_count % recognition_interval == 0 and not freeze_start_time:
             face_embedding = DeepFace.represent(face, model_name="VGG-Face", enforce_detection=False)
 
             if face_detected:
@@ -87,15 +89,15 @@ while True:
                         last_recognized_name = recognized_names[0]
 
                     if continuous_recognition_count >= recognition_threshold:
-                        cv2.putText(frame, f"Welcome {last_recognized_name}", (x, y-10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
                         print(f"Welcome {last_recognized_name}")
-                        continuous_recognition_count = 0  # カウントをリセット
+                        continuous_recognition_count = 0
+                        freeze_start_time = time.time()
                 else:
-                    continuous_recognition_count = 0  # 顔が認識されなかった場合、カウントをリセット
+                    continuous_recognition_count = 0
                     last_recognized_name = ""
                     if customer_name == "":
                         customer_name = input("Enter Customer Name: ")
-                        binary_feature = json.dumps({'embedding': face_embedding[0]['embedding']})
+                        binary_feature = json.dumps({'embedding': face_embedding['embedding']})
                         cursor.execute("INSERT INTO faces (name, feature) VALUES (?, ?)", (customer_name, binary_feature))
                         conn.commit()
                         print(f"新しい顧客 '{customer_name}' のデータを保存しました。")
@@ -106,17 +108,19 @@ while True:
                 face_included_frames += 1
                 if face_included_frames == frame_threshold:
                     face_detected = True
-    # 名前の表示制御をforループの外に移動
-    if continuous_recognition_count >= recognition_threshold:
-        display_name = f"Welcome {last_recognized_name}"
-        if display_name_counter == 0:  # この行を追加
-            display_name_counter = display_name_duration  # 名前の表示カウンタを設定
-        continuous_recognition_count = 0  # カウントをリセット
 
-    if display_name_counter > 0:
-        # 名前の表示カウンタが0より大きい場合、名前を表示し続ける
-        cv2.putText(frame, display_name, (10, 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
-        display_name_counter -= 1
+        expand_margin = 40
+        x_start = max(x - expand_margin, 0)
+        y_start = max(y - expand_margin, 0)
+        x_end = min(x + w + expand_margin, frame.shape[1])
+        y_end = min(y + h + expand_margin, frame.shape[0])
+
+        cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
+
+        font_scale = 1.6
+        if freeze_start_time:
+            cv2.putText(frame, f"Welcome {last_recognized_name}", (x, y - 60), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 2)
+
     cv2.imshow('Camera', frame)
     if cv2.waitKey(10) & 0xFF == ord('q'):
         break
