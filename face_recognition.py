@@ -24,7 +24,7 @@ conn.commit()
 # Initializing variables
 face_detected = False
 face_included_frames = 0
-frame_threshold = 10
+frame_threshold = 5
 customer_name = ""
 frame_count = 0
 recognition_interval = 5
@@ -98,11 +98,10 @@ while True:
                     last_recognized_name = ""
                     if customer_name == "":
                         customer_name = input("Enter Customer Name: ")
-                        binary_feature = json.dumps({'embedding': face_embedding['embedding']})
+                        binary_feature = json.dumps(face_embedding)
                         cursor.execute("INSERT INTO faces (name, feature) VALUES (?, ?)", (customer_name, binary_feature))
                         conn.commit()
                         print(f"新しい顧客 '{customer_name}' のデータを保存しました。")
-                        customer_name = ""
                     face_detected = False
                     face_included_frames = 0
             else:
