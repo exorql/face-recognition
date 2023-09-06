@@ -34,7 +34,7 @@ target_size = (224, 224)
 # Variable for determining the same person 5 times in a row
 last_recognized_name = ""
 continuous_recognition_count = 0
-recognition_threshold = 5
+recognition_threshold = 1
 current_display_name= ""
 freeze_start_time = None
 freeze_duration = 5
@@ -42,7 +42,8 @@ freezed_frame = None
 
 while True:
     ret, frame = cap.read()
-    if not ret:
+
+    if frame is None:
         break
 
     frame_count += 1
@@ -89,7 +90,7 @@ while True:
                         last_recognized_name = recognized_names[0]
 
                     if continuous_recognition_count >= recognition_threshold:
-                        print(f"Welcome {last_recognized_name}")
+                        print(f"Match {last_recognized_name}")
                         continuous_recognition_count = 0
                         freeze_start_time = time.time()
                 else:
@@ -119,7 +120,7 @@ while True:
 
         font_scale = 1.6
         if freeze_start_time:
-            cv2.putText(frame, f"Welcome {last_recognized_name}", (x, y - 60), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 2)
+            cv2.putText(frame, f"Match {last_recognized_name}", (x, y - 60), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 2)
 
     cv2.imshow('Camera', frame)
     if cv2.waitKey(10) & 0xFF == ord('q'):
