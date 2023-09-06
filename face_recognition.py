@@ -80,6 +80,7 @@ while True:
                         face_embedding_array = face_embedding_array.reshape(saved_feature.shape)
                     similarity = cosine_similarity(face_embedding_array.reshape(1, -1), saved_feature.reshape(1, -1))
                     if similarity[0][0] > 0.6:
+                        print(f"{similarity[0][0]}")
                         recognized_names.append(saved_name)
 
                 if recognized_names:
@@ -120,6 +121,7 @@ while True:
         font_scale = 1.6
         if freeze_start_time:
             cv2.putText(frame, f"Match {last_recognized_name}", (x, y - 60), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 2)
+            cv2.putText(frame, f"{similarity[0][0]}", (x, y - 100), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 2)
 
     cv2.imshow('Camera', frame)
     if cv2.waitKey(10) & 0xFF == ord('q'):
