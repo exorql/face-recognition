@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS faces (
 conn.commit()
 DeepFace.build_model(model_name="VGG-Face")
 face_saved = False
-first_time_customer = True
+first_time_customer = False
 customer_name = ""
 recognized_customers = []
 
@@ -67,11 +67,13 @@ while True:
                     similarity = cosine_similarity(face_embedding.reshape(1, -1), saved_feature.reshape(1, -1))
 
                     # 閾値の調整
-                    if similarity[0][0] > 0.6:
+                    if similarity[0][0] > 0.8:
+                        print(similarity[0][0])
                         recognized_names.append(saved_name)
                 if recognized_names:
                     print(f"Welcome {recognized_names[0]}")
-                    cv2.putText(frame, f"Welcome {recognized_names[0]}", (10, 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
+                    cv2.putText(frame, f"Match {recognized_names[0]}", (10, 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
+                    cv2.putText(frame, f"{similarity[0][0]}", (10, 50), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
                 else:
                     print("Does not match")
                     cv2.putText(frame, f"Does not match", (10, 30), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 2)
