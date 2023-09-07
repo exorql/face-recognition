@@ -47,6 +47,9 @@ while True:
     if frame is None:
         break
 
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     frame_count += 1
 
     face_objs = DeepFace.extract_faces(img_path=frame, target_size=target_size, enforce_detection=False)
