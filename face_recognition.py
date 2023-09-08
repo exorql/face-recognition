@@ -57,8 +57,7 @@ while True:
     if frame_count % recognition_interval == 0:
 
       face_objs = DeepFace.extract_faces(img_path=frame, target_size=target_size, enforce_detection=False)
-      faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 4]
-
+      faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 5]
       if freeze_start_time and time.time() - freeze_start_time > freeze_duration:
           freeze_start_time = None
           last_recognized_name = ""
@@ -68,6 +67,8 @@ while True:
           max_area_index = areas.index(max(areas))
           x, y, w, h = faces[max_area_index]
           face = frame[y:y+h, x:x+w]
+          face_detected = True
+          face_included_frames += 1
 
           if not freeze_start_time:
               face_embedding = DeepFace.represent(face, model_name="VGG-Face", enforce_detection=False)
@@ -122,10 +123,6 @@ while True:
                           face_detected = False
                           face_included_frames = 0
                           non_matched_count = 0
-              else:
-                  face_included_frames += 1
-                  if face_included_frames == frame_threshold and not face_detected:
-                      face_detected = True
 
           expand_margin = 40
           x_start = max(x - expand_margin, 0)
