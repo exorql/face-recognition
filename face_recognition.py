@@ -71,7 +71,11 @@ while True:
           face_included_frames += 1
 
           if not freeze_start_time:
-              face_embedding = DeepFace.represent(face, model_name="VGG-Face", enforce_detection=False)
+              try:
+                  face_embedding = DeepFace.represent(face, model_name="VGG-Face", enforce_detection=True)
+              except ValueError:
+                  print("Face not detected.")
+                  continue
               if face_detected and face_embedding:
                   recognized_names = []
                   for row in cursor.execute("SELECT name, feature FROM faces"):
