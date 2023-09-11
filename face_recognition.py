@@ -7,7 +7,10 @@ import json
 from sklearn.metrics.pairwise import cosine_similarity
 from deepface.commons import functions
 
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+# movie
+cap = cv2.VideoCapture('out_01.mov')
+fps = int(cap.get(cv2.CAP_PROP_FPS))
 
 # Initialize the database
 conn = sqlite3.connect('faces.db')
@@ -57,7 +60,8 @@ while True:
     if frame_count % recognition_interval == 0:
 
       face_objs = DeepFace.extract_faces(img_path=frame, target_size=target_size, enforce_detection=False)
-      faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 5]
+      # print(face_objs)
+      faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 4]
       if freeze_start_time and time.time() - freeze_start_time > freeze_duration:
           freeze_start_time = None
           last_recognized_name = ""
@@ -95,7 +99,7 @@ while True:
                           face_embedding_array = face_embedding_array.reshape(saved_feature.shape)
                       similarity = cosine_similarity(face_embedding_array.reshape(1, -1), saved_feature.reshape(1, -1))
                       print(f"{similarity[0][0]}")
-                      if similarity[0][0] > 0.6:
+                      if similarity[0][0] > 0.7:
                           recognized_names.append(saved_name)
 
                   if recognized_names:
@@ -151,7 +155,9 @@ while True:
         x_start, y_start, x_end, y_end = last_face_position
         cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
     cv2.imshow('Camera', frame)
-    if cv2.waitKey(10) & 0xFF == ord('q'):
+    #if cv2.waitKey(10) & 0xFF == ord('q'):
+    # movie
+    if cv2.waitKey(1000 // fps) & 0xFF == ord('q'):
         break
 
 cap.release()
