@@ -6,11 +6,32 @@ from deepface import DeepFace
 import json
 from sklearn.metrics.pairwise import cosine_similarity
 from deepface.commons import functions
+import argparse
 
-# cap = cv2.VideoCapture(0)
-# movie
-cap = cv2.VideoCapture('out_01.mov')
-fps = int(cap.get(cv2.CAP_PROP_FPS))
+parser = argparse.ArgumentParser(description='Face recognition system using Jetson Nano.')
+
+# Detector backend argument with default value set to 'MediaPipe'
+parser.add_argument('-d', '--detector_backend', type=str, default='opencv', choices=['opencv', 'ssd', 'dlib', 'mtcnn', 'retinaface', 'mediapipe', 'yolov8', 'yunet'], help='Detector backend to use. Options: opencv, ssd, dlib, mtcnn, retinaface, mediapipe, yolov8, yunet')
+
+# Model name argument with default value set to 'VGG-Face'
+parser.add_argument('-m', '--model_name', type=str, default="VGG-Face", choices=['VGG-Face', 'Facenet', 'OpenFace', 'DeepFace', 'DeepID', 'ArcFace', 'Dlib'], help="Face recognition model. Options: 'VGG-Face', 'Facenet', 'OpenFace', 'DeepFace', 'DeepID', 'ArcFace', 'Dlib'")
+
+# Source argument for webcam index or video file path
+parser.add_argument('-s', '--source', type=str, default='0', help='Camera source index or video file path')
+
+args = parser.parse_args()
+
+detector_backend = args.detector_backend
+model_name = args.model_name
+source = args.source
+
+model_name=args.model_name
+detector_backend = args.detector_backend
+if source.isdigit():
+    cap = cv2.VideoCapture(int(source))  # Open webcam by index
+else:
+    cap = cv2.VideoCapture(source)  # Open video file by path
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
 # Initialize the database
 conn = sqlite3.connect('faces.db')
@@ -31,7 +52,7 @@ frame_threshold = 5
 customer_name = ""
 frame_count = 0
 recognition_interval = 5
-target_size = (224, 224)
+target_size = functions.find_target_size(model_name=model_name)
 
 # Variable for determining the same person 5 times in a row
 last_recognized_name = ""
@@ -58,9 +79,8 @@ while True:
     frame_count += 1
 
     if frame_count % recognition_interval == 0:
-
-      face_objs = DeepFace.extract_faces(img_path=frame, target_size=target_size, enforce_detection=False)
-      # print(face_objs)
+      # 入力画像（frame）から顔を検出し、その顔の情報を取得
+      face_objs = DeepFace.extract_faces(img_path=frame, detector_backend=detector_backend, target_size=target_size, enforce_detection=False)
       faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 4]
       if freeze_start_time and time.time() - freeze_start_time > freeze_duration:
           freeze_start_time = None
@@ -76,7 +96,8 @@ while True:
 
           if not freeze_start_time:
               try:
-                  face_embedding = DeepFace.represent(face, model_name="VGG-Face", enforce_detection=True)
+                  # 指定されたモデル（model_name）を使用して、入力された顔画像（face）の特徴ベクトル（embedding）を取得
+                  face_embedding = DeepFace.represent(face, model_name=model_name, enforce_detection=True)
               except ValueError:
                   print("Face not detected.")
                   continue
@@ -155,10 +176,12 @@ while True:
         x_start, y_start, x_end, y_end = last_face_position
         cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
     cv2.imshow('Camera', frame)
-    #if cv2.waitKey(10) & 0xFF == ord('q'):
-    # movie
-    if cv2.waitKey(1000 // fps) & 0xFF == ord('q'):
-        break
+    if source.isdigit():  # If the source is a webcam
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            break
+    else:  # If the source is a video file
+        if cv2.waitKey(1000 // fps) & 0xFF == ord('q'):
+            break
 
 cap.release()
 cv2.destroyAllWindows()
