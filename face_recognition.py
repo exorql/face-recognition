@@ -4,8 +4,8 @@ import numpy as np
 import sqlite3
 from deepface import DeepFace
 import json
-from sklearn.metrics.pairwise import cosine_similarity
 from deepface.commons import functions
+from commons import distance as dst
 import argparse
 
 parser = argparse.ArgumentParser(description='Face recognition system using Jetson Nano.')
@@ -16,6 +16,8 @@ parser.add_argument('-d', '--detector_backend', type=str, default='opencv', choi
 # Model name argument with default value set to 'VGG-Face'
 parser.add_argument('-m', '--model_name', type=str, default="VGG-Face", choices=['VGG-Face', 'Facenet', 'OpenFace', 'DeepFace', 'DeepID', 'ArcFace', 'Dlib'], help="Face recognition model. Options: 'VGG-Face', 'Facenet', 'OpenFace', 'DeepFace', 'DeepID', 'ArcFace', 'Dlib'")
 
+parser.add_argument('-dm', '--distance_metric', type=str, default="euclidean", choices=['cosine', 'euclidean', 'euclidean_l2'], help="Distance metric to use for face similarity. Options: 'cosine', 'euclidean', 'euclidean_l2'")
+
 # Source argument for webcam index or video file path
 parser.add_argument('-s', '--source', type=str, default='0', help='Camera source index or video file path')
 
@@ -23,6 +25,7 @@ args = parser.parse_args()
 
 detector_backend = args.detector_backend
 model_name = args.model_name
+distance_metric = args.distance_metric
 source = args.source
 
 model_name=args.model_name
@@ -118,9 +121,18 @@ while True:
 
                       if face_embedding_array.shape != saved_feature.shape:
                           face_embedding_array = face_embedding_array.reshape(saved_feature.shape)
-                      similarity = cosine_similarity(face_embedding_array.reshape(1, -1), saved_feature.reshape(1, -1))
-                      print(f"{similarity[0][0]}")
-                      if similarity[0][0] > 0.7:
+                      if distance_metric == "cosine":
+                          similarity = 1 - dst.findCosineDistance(face_embedding_array, saved_feature)
+                      elif distance_metric == "euclidean":
+                          similarity = -dst.findEuclideanDistance(face_embedding_array, saved_feature)
+                      elif distance_metric == "euclidean_l2":
+                          similarity = -dst.findEuclideanDistance(dst.l2_normalize(face_embedding_array), dst.l2_normalize(saved_feature))
+
+                      threshold = dst.findThreshold(model_name, distance_metric)
+
+                      print(f"{similarity}")
+
+                      if similarity > threshold:
                           recognized_names.append(saved_name)
 
                   if recognized_names:
