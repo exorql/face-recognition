@@ -66,6 +66,8 @@ non_matched_count = 0
 last_face_position = None
 last_name_position = None
 
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 distances = []
 
 while True:
@@ -74,8 +76,6 @@ while True:
     if frame is None:
         break
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     face_embedding = None
     frame_count += 1
 
