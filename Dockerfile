@@ -1,16 +1,25 @@
-FROM python:3.8-slim
+FROM nvcr.io/nvidia/l4t-base:r32.7.1
 
 WORKDIR /app
 
+ENV TZ Asia/Tokyo
+RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    software-properties-common \
+    libopencv-dev \
+    python3-opencv
 
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update
 
-COPY . /app/
+RUN apt-get install -y python3.8 python3.8-dev python3.8-distutils
 
-CMD ["python", "face_recognition.py"]
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+
+RUN apt-get install -y wget && wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
+
+RUN pip3 install numpy deepface
+
+COPY ./face_recognition.py /app/
+
+CMD ["python3", "face_recognition.py"]
