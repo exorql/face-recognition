@@ -21,5 +21,6 @@ RUN apt-get install -y wget && wget https://bootstrap.pypa.io/get-pip.py && pyth
 RUN pip3 install numpy deepface
 
 COPY ./face_recognition.py /app/
+COPY ./commons /app/commons
 
 CMD ["python3", "face_recognition.py"]
