@@ -22,5 +22,6 @@ RUN pip3 install numpy deepface
 
 COPY ./face_recognition.py /app/
 COPY ./commons /app/commons
+COPY VGG-Face-weights.h5 /root/.deepface/weights/VGG-Face-weights.h5
 
 CMD ["python3", "face_recognition.py"]
