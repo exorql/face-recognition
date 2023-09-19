@@ -39,3 +39,26 @@ To use the 'mediapipe' detector backend and 'Facenet' model:
 ```bash
 python3 face_recognition.py -d 'mediapipe' -m 'Facenet'
 ```
+
+## Docker Setup
+
+### Building the Docker Image:
+
+```bash
+docker build -t face_recognition_image .
+```
+
+### Running the Docker Container:
+
+Before running the container, ensure you allow Docker to access the X window:
+# For Ubuntu
+
+```bash
+sudo xhost +si:localuser:root
+```
+
+Make sure you have nvidia-docker2 installed if you're planning to use NVIDIA GPUs.
+
+```bash
+docker run --rm --runtime nvidia --privileged -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro face_recognition_image
+```

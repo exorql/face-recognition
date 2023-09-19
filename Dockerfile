@@ -1,27 +1,29 @@
-FROM nvcr.io/nvidia/l4t-base:r32.7.1
+# ベースイメージの選択
+FROM python:3.8
 
+# ディレクトリの作成と移動
+RUN mkdir /app
 WORKDIR /app
 
-ENV TZ Asia/Tokyo
-RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-
+# 必要なパッケージのインストール
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     libopencv-dev \
-    python3-opencv
+    python3-opencv \
+    wget \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update
+# Pythonライブラリのインストール
+COPY ./requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-RUN apt-get install -y python3.8 python3.8-dev python3.8-distutils
-
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
-
-RUN apt-get install -y wget && wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
-
-RUN pip3 install numpy deepface
-
+# スクリプトのコピー
 COPY ./face_recognition.py /app/
 COPY ./commons /app/commons
-COPY VGG-Face-weights.h5 /root/.deepface/weights/VGG-Face-weights.h5
 
 CMD ["python3", "face_recognition.py"]
