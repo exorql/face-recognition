@@ -50,13 +50,13 @@ docker build -t face_recognition_image .
 
 ## Running the Docker Container:
 
-Before running the container, ensure you allow Docker to access the X window:
 ### For Ubuntu
+Before running the container, ensure you allow Docker to access the X window:
 
 ```bash
 sudo xhost +si:localuser:root
 ```
 
 ```bash
-docker run --rm --runtime nvidia --privileged -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:ro face_recognition_image
+docker run -it --rm --name face_recognition_image --network host -e DISPLAY=$DISPLAY --device /dev/video0:/dev/video0 face_recognition_image
 ```
