@@ -87,9 +87,20 @@ while True:
     results = face_mesh.process(image_rgb)
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
-            nose_tip = np.array([[landmark.x, landmark.y] for landmark in face_landmarks.landmark if landmark.z < -0.5])
-            if len(nose_tip) > 0:
+            nose_tip = face_landmarks.landmark[4]
+            left_eye_outer = face_landmarks.landmark[33]
+            right_eye_outer = face_landmarks.landmark[263]
+            left_ear = face_landmarks.landmark[234]
+            right_ear = face_landmarks.landmark[454]
+
+            nose_to_left_eye = np.array([nose_tip.x - left_eye_outer.x, nose_tip.y - left_eye_outer.y])
+            nose_to_right_eye = np.array([nose_tip.x - right_eye_outer.x, nose_tip.y - right_eye_outer.y])
+
+            threshold = 0.15
+
+            if abs(nose_to_left_eye[0]) > threshold or abs(nose_to_right_eye[0]) > threshold:
                 continue
+
     face_embedding = None
     frame_count += 1
 
@@ -105,6 +116,12 @@ while True:
           max_area_index = areas.index(max(areas))
           x, y, w, h = faces[max_area_index]
           face = frame[y:y+h, x:x+w]
+          # 表情を分析
+          # results = DeepFace.analyze(img_path=face, actions=['emotion'], enforce_detection=False)
+          # print(results)
+          # emotions = results[0]["emotion"]
+          # if emotions["happy"] > 50 or emotions["surprise"] > 50:
+          #     continue
           face_detected = True
           face_included_frames += 1
 
