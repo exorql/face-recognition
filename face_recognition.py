@@ -82,9 +82,10 @@ while True:
     if frame is None:
         break
 
-    # mediapipeを使用して顔のランドマークを検出
+    # 顔のランドマーク検出
     image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(image_rgb)
+    threshold = 0.15
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             nose_tip = face_landmarks.landmark[4]
@@ -96,8 +97,6 @@ while True:
             nose_to_left_eye = np.array([nose_tip.x - left_eye_outer.x, nose_tip.y - left_eye_outer.y])
             nose_to_right_eye = np.array([nose_tip.x - right_eye_outer.x, nose_tip.y - right_eye_outer.y])
 
-            threshold = 0.15
-
             if abs(nose_to_left_eye[0]) > threshold or abs(nose_to_right_eye[0]) > threshold:
                 continue
 
@@ -106,6 +105,7 @@ while True:
 
     if frame_count % recognition_interval == 0:
       face_objs = DeepFace.extract_faces(img_path=frame, detector_backend=detector_backend, target_size=target_size, enforce_detection=False)
+      # confidence check
       faces = [(obj["facial_area"]["x"], obj["facial_area"]["y"], obj["facial_area"]["w"], obj["facial_area"]["h"]) for obj in face_objs if obj.get('confidence', 0) > 0.9]
       if freeze_start_time and time.time() - freeze_start_time > freeze_duration:
           freeze_start_time = None
@@ -116,7 +116,7 @@ while True:
           max_area_index = areas.index(max(areas))
           x, y, w, h = faces[max_area_index]
           face = frame[y:y+h, x:x+w]
-          # 表情を分析
+          # emotions分析
           # results = DeepFace.analyze(img_path=face, actions=['emotion'], enforce_detection=False)
           # print(results)
           # emotions = results[0]["emotion"]
@@ -164,10 +164,10 @@ while True:
                       best_face_index = np.argmax(distances)
                       if best_face_index < len(faces):
                           best_face_area = faces[best_face_index]
-                      threshold = dst.findThreshold(model_name, distance_metric)
+                      threshold_similarity = dst.findThreshold(model_name, distance_metric)
                       print(f"最も類似性の高い距離: {max_similarity}")
                       best_similarity = max_similarity
-                      if best_similarity > threshold:
+                      if best_similarity > threshold_similarity:
                           recognized_name = saved_names[best_face_index]
                           recognized_names.append(recognized_name)
 
