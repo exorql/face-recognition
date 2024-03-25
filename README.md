@@ -37,7 +37,7 @@ python3 face_recognition.py
 To use the 'mediapipe' detector backend and 'Facenet' model:
 
 ```bash
-python3 face_recognition.py -d 'retinaface'
+python3 face_recognition.py -d 'mediapipe' -m 'Facenet'
 ```
 
 ## Docker Setup
